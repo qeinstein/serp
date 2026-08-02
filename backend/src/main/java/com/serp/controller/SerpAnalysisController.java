@@ -13,6 +13,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+
 @RestController
 @RequestMapping("/api/v1")
 public class SerpAnalysisController {
@@ -39,9 +40,25 @@ public class SerpAnalysisController {
         return ResponseEntity.ok(response);
     }
 
+    /**
+     * Real SERP Search endpoint — multithreaded TF-scored full-text search
+     * across all academic papers (crime-reporting + deep learning).
+     *
+     * GET /api/v1/serp/search?q=spatial+hotspot&domain=ALL&threadCount=4
+     */
+    @GetMapping("/serp/search")
+    public ResponseEntity<SerpSearchResponse> search(
+            @RequestParam(value = "q", defaultValue = "") String query,
+            @RequestParam(value = "domain", defaultValue = "ALL") String domain,
+            @RequestParam(value = "threadCount", defaultValue = "4") int threadCount) {
+        SerpSearchResponse response = benchmarkService.search(query, domain, threadCount);
+        return ResponseEntity.ok(response);
+    }
+
     @GetMapping("/serp/crime-features")
     public ResponseEntity<Map<String, Object>> getCrimeFeatures(
             @RequestParam(defaultValue = "4") int threadCount) {
+
         long startTime = System.currentTimeMillis();
         List<CrimeFeatureResult> features = crimeService.analyzeFeatures(threadCount);
         long duration = System.currentTimeMillis() - startTime;

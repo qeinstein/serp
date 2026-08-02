@@ -39,6 +39,22 @@ export interface SerpPaper {
   url: string;
 }
 
+export interface SearchResult {
+  paper: SerpPaper;
+  relevanceScore: number;
+  snippet: string;
+}
+
+export interface SerpSearchResponse {
+  query: string;
+  tokens: string[];
+  totalResults: number;
+  executionTimeMs: number;
+  semanticSummary: string;
+  results: SearchResult[];
+}
+
+// Legacy
 export interface SummarizeResponse {
   query: string;
   summaryText: string;

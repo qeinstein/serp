@@ -2,7 +2,7 @@
 
 import React from 'react';
 
-type Tab = 'crime' | 'dl' | 'benchmark' | 'arch';
+type Tab = 'search' | 'crime' | 'dl' | 'benchmark' | 'arch';
 
 interface HeaderProps {
   activeTab: Tab;
@@ -10,42 +10,45 @@ interface HeaderProps {
 }
 
 const tabs: { id: Tab; label: string }[] = [
-  { id: 'crime', label: 'Crime Systems' },
-  { id: 'dl', label: 'Deep Learning Papers' },
+  { id: 'search',    label: 'Search' },
+  { id: 'crime',     label: 'Crime Features' },
+  { id: 'dl',        label: 'DL Sub-Headings' },
   { id: 'benchmark', label: 'Benchmark' },
-  { id: 'arch', label: 'Architecture' },
+  { id: 'arch',      label: 'Architecture' },
 ];
 
 export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab }) => {
   return (
-    <header style={{ borderBottom: '1px solid var(--border)' }} className="bg-[var(--surface)] sticky top-0 z-50">
-      <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between gap-6">
-        <div className="flex items-center gap-3">
-          <div className="w-6 h-6 rounded bg-indigo-500 flex items-center justify-center">
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-              <rect x="1" y="1" width="4" height="4" rx="1" fill="white" />
-              <rect x="7" y="1" width="4" height="4" rx="1" fill="white" opacity="0.6" />
-              <rect x="1" y="7" width="4" height="4" rx="1" fill="white" opacity="0.6" />
-              <rect x="7" y="7" width="4" height="4" rx="1" fill="white" opacity="0.3" />
-            </svg>
+    <header style={{ borderBottom: '1px solid var(--border)', background: 'var(--surface)' }} className="sticky top-0 z-50">
+      <div style={{ maxWidth: 1100, margin: '0 auto', padding: '0 24px', height: 52, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 24 }}>
+        {/* Brand */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+          <div style={{ width: 24, height: 24, borderRadius: 6, background: '#6366f1', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
           </div>
-          <span className="text-sm font-semibold text-white tracking-tight">SERP Engine</span>
-          <span className="tag tag-accent">Assignment 1</span>
+          <span style={{ fontSize: 14, fontWeight: 600, color: 'white', letterSpacing: '-0.01em' }}>SERP Engine</span>
         </div>
 
-        <nav className="flex items-center gap-1">
+        {/* Nav */}
+        <nav style={{ display: 'flex', gap: 2 }}>
           {tabs.map(tab => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className="btn btn-ghost"
               style={{
-                color: activeTab === tab.id ? 'white' : 'var(--text-muted)',
+                padding: '5px 12px',
+                fontSize: 13,
+                fontWeight: 500,
+                border: 'none',
+                borderRadius: 6,
+                cursor: 'pointer',
+                fontFamily: 'Inter, sans-serif',
                 background: activeTab === tab.id ? 'var(--surface-2)' : 'transparent',
-                borderColor: activeTab === tab.id ? 'var(--border)' : 'transparent',
-                fontSize: '13px',
-                padding: '6px 12px',
+                color: activeTab === tab.id ? 'white' : 'var(--text-muted)',
+                transition: 'all 0.15s',
               }}
+              onMouseEnter={e => { if (activeTab !== tab.id) e.currentTarget.style.color = 'var(--text)'; }}
+              onMouseLeave={e => { if (activeTab !== tab.id) e.currentTarget.style.color = 'var(--text-muted)'; }}
             >
               {tab.label}
             </button>
