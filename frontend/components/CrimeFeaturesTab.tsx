@@ -1,248 +1,261 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { CrimeFeatureResult } from '../lib/types';
 import { fetchCrimeFeatures } from '../lib/api';
 import {
-  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, PieChart, Pie, Legend
+  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
 } from 'recharts';
-import { Shield, Sliders, CheckCircle2, Info, ChevronRight, RefreshCw } from 'lucide-react';
 
-const COLORS = ['#6366F1', '#06B6D4', '#10B981', '#F59E0B', '#8B5CF6', '#EC4899', '#3B82F6', '#14B8A6', '#F97316', '#A855F7', '#64748B', '#0284C7'];
+const COLORS = ['#6366f1', '#8b5cf6', '#06b6d4', '#10b981', '#f59e0b', '#ec4899', '#3b82f6', '#14b8a6', '#f97316', '#a855f7', '#64748b', '#0ea5e9'];
+
+const CustomTooltip = ({ active, payload, label }: any) => {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="surface" style={{ padding: '10px 14px', minWidth: 160 }}>
+      <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>{payload[0]?.payload?.fullName || label}</p>
+      <p style={{ fontSize: 14, fontWeight: 600, color: 'white' }}>{payload[0]?.value} systems</p>
+    </div>
+  );
+};
 
 export const CrimeFeaturesTab: React.FC = () => {
   const [features, setFeatures] = useState<CrimeFeatureResult[]>([]);
+  const [filtered, setFiltered] = useState<CrimeFeatureResult[]>([]);
   const [loading, setLoading] = useState(true);
   const [threadCount, setThreadCount] = useState(4);
-  const [selectedFeature, setSelectedFeature] = useState<CrimeFeatureResult | null>(null);
+  const [search, setSearch] = useState('');
+  const [selected, setSelected] = useState<CrimeFeatureResult | null>(null);
+  const [view, setView] = useState<'table' | 'chart'>('table');
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  const loadData = async (threads: number) => {
+  const load = async (threads: number) => {
     setLoading(true);
     const data = await fetchCrimeFeatures(threads);
     setFeatures(data);
-    if (data.length > 0 && !selectedFeature) {
-      setSelectedFeature(data[0]);
-    }
+    setFiltered(data);
+    if (data.length > 0) setSelected(data[0]);
     setLoading(false);
   };
 
-  useEffect(() => {
-    loadData(threadCount);
-  }, []);
+  useEffect(() => { load(threadCount); }, []);
 
-  const chartData = features.map(f => ({
-    name: f.featureName.length > 25 ? f.featureName.substring(0, 22) + '...' : f.featureName,
+  useEffect(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) { setFiltered(features); return; }
+    setFiltered(features.filter(f =>
+      f.featureName.toLowerCase().includes(q) ||
+      f.category.toLowerCase().includes(q) ||
+      f.description.toLowerCase().includes(q) ||
+      f.adoptingSystems.some(s => s.toLowerCase().includes(q))
+    ));
+  }, [search, features]);
+
+  const chartData = filtered.map(f => ({
+    name: f.featureName.length > 28 ? f.featureName.slice(0, 26) + '…' : f.featureName,
     fullName: f.featureName,
     systems: f.systemCount,
-    percentage: f.percentageOfSystems
   }));
 
   return (
-    <div className="space-y-8">
-      {/* Section Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 glass-panel p-6 rounded-2xl border border-indigo-500/20">
-        <div>
-          <div className="flex items-center gap-2 text-emerald-400 text-sm font-semibold mb-1">
-            <Shield className="w-4 h-4" />
-            <span>Task 1 Specification</span>
-          </div>
-          <h2 className="text-2xl font-bold text-white">
-            Distinctive Features of Crime-Reporting Papers/Systems
-          </h2>
-          <p className="text-sm text-slate-400 mt-1 max-w-3xl">
-            Multithreaded analysis extracting <span className="text-indigo-400 font-semibold">12 distinct features</span> from SERP datasets, ranked strictly in descending order of systems embodying each feature.
-          </p>
+    <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+      {/* Page header */}
+      <div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+          <span className="tag tag-green">Task 1</span>
+          <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Crime-Reporting Papers</span>
+        </div>
+        <h2 style={{ fontSize: 20, fontWeight: 600, color: 'white', margin: 0 }}>Distinctive Features of Crime-Reporting Systems</h2>
+        <p style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 4 }}>
+          Ranked by number of systems that implement each feature — descending.
+        </p>
+      </div>
+
+      {/* Controls bar */}
+      <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+        {/* Search */}
+        <div style={{ position: 'relative', flex: '1 1 260px' }}>
+          <svg style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-dim)' }} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <input
+            ref={inputRef}
+            className="input"
+            style={{ paddingLeft: 34 }}
+            placeholder="Search features, categories, or systems…"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+          />
         </div>
 
-        {/* Multithread Executor Control */}
-        <div className="flex items-center gap-4 bg-slate-900/90 p-3 rounded-xl border border-slate-800">
-          <div className="flex items-center gap-2">
-            <Sliders className="w-4 h-4 text-indigo-400" />
-            <span className="text-xs text-slate-300 font-medium">Worker Threads:</span>
-            <span className="text-sm font-bold text-indigo-400 font-mono">{threadCount}</span>
-          </div>
+        {/* Thread count */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+          <span style={{ fontSize: 12, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>Threads</span>
           <input
-            type="range"
-            min="1"
-            max="16"
-            value={threadCount}
-            onChange={(e) => setThreadCount(parseInt(e.target.value))}
-            className="w-24 accent-indigo-500 cursor-pointer"
+            type="range" min={1} max={16} value={threadCount}
+            onChange={e => setThreadCount(+e.target.value)}
+            style={{ width: 80, accentColor: '#6366f1', cursor: 'pointer' }}
           />
-          <button
-            onClick={() => loadData(threadCount)}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold transition"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-            Run
-          </button>
+          <span className="mono" style={{ fontSize: 12, color: 'white', width: 16 }}>{threadCount}</span>
+        </div>
+
+        <button
+          className="btn btn-primary"
+          style={{ flexShrink: 0 }}
+          onClick={() => load(threadCount)}
+          disabled={loading}
+        >
+          {loading ? (
+            <svg className="spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+          ) : (
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/></svg>
+          )}
+          Run
+        </button>
+
+        {/* View toggle */}
+        <div style={{ display: 'flex', gap: 4, background: 'var(--surface-2)', borderRadius: 8, padding: 3, border: '1px solid var(--border-subtle)' }}>
+          {(['table', 'chart'] as const).map(v => (
+            <button
+              key={v}
+              onClick={() => setView(v)}
+              style={{
+                padding: '4px 10px', fontSize: 12, fontWeight: 500, borderRadius: 6, border: 'none',
+                background: view === v ? 'var(--surface)' : 'transparent',
+                color: view === v ? 'white' : 'var(--text-muted)',
+                cursor: 'pointer', transition: 'all 0.15s',
+              }}
+            >
+              {v === 'table' ? 'Table' : 'Chart'}
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* Visualizations Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Ranked Bar Chart */}
-        <div className="lg:col-span-2 glass-panel p-6 rounded-2xl border border-slate-800">
-          <h3 className="text-lg font-semibold text-white mb-4 flex items-center justify-between">
-            <span>Features Categorized by System Frequency</span>
-            <span className="text-xs text-slate-400 font-mono">Ordered: Highest &rarr; Lowest</span>
-          </h3>
+      {/* Stats row */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
+        {[
+          { label: 'Features Found', value: filtered.length, sub: `of ${features.length} total` },
+          { label: 'Papers Analyzed', value: 10, sub: 'Crime-reporting systems' },
+          { label: 'Thread Workers', value: threadCount, sub: `${loading ? 'Running…' : 'Completed'}` },
+        ].map(s => (
+          <div key={s.label} className="stat-card">
+            <p style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>{s.label}</p>
+            <p style={{ fontSize: 22, fontWeight: 700, color: 'white', lineHeight: 1 }}>{s.value}</p>
+            <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 3 }}>{s.sub}</p>
+          </div>
+        ))}
+      </div>
 
-          <div className="h-80 w-full">
+      {/* Main content */}
+      {view === 'table' ? (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 16 }}>
+          {/* Table */}
+          <div className="surface" style={{ overflow: 'hidden' }}>
+            {filtered.length === 0 ? (
+              <div style={{ padding: 48, textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>
+                No features match <em>"{search}"</em>
+              </div>
+            ) : (
+              <div style={{ overflowX: 'auto' }}>
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>Feature</th>
+                      <th>Category</th>
+                      <th style={{ textAlign: 'right' }}>Systems</th>
+                      <th style={{ textAlign: 'right' }}>Coverage</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filtered.map(f => (
+                      <tr
+                        key={f.rank}
+                        className={selected?.rank === f.rank ? 'active' : ''}
+                        style={{ cursor: 'pointer' }}
+                        onClick={() => setSelected(f)}
+                      >
+                        <td><span className="rank-badge">{f.rank}</span></td>
+                        <td style={{ fontWeight: 500, color: 'white' }}>{f.featureName}</td>
+                        <td>
+                          <span style={{ fontSize: 11, color: 'var(--text-muted)', background: 'var(--surface-2)', padding: '2px 7px', borderRadius: 4, border: '1px solid var(--border-subtle)' }}>
+                            {f.category}
+                          </span>
+                        </td>
+                        <td style={{ textAlign: 'right', fontWeight: 600, color: 'white', fontFamily: 'JetBrains Mono, monospace' }}>{f.systemCount}</td>
+                        <td style={{ textAlign: 'right', color: 'var(--text-muted)', fontFamily: 'JetBrains Mono, monospace', fontSize: 12 }}>{f.percentageOfSystems}%</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+
+          {/* Detail panel */}
+          <div className="surface" style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
+            {selected ? (
+              <>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <span className="rank-badge">#{selected.rank}</span>
+                  <span className="tag tag-green">{selected.percentageOfSystems}% adoption</span>
+                </div>
+
+                <div>
+                  <p style={{ fontSize: 15, fontWeight: 600, color: 'white', lineHeight: 1.4 }}>{selected.featureName}</p>
+                  <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>{selected.category}</p>
+                </div>
+
+                <div className="divider" />
+
+                <div>
+                  <p style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>Description</p>
+                  <p style={{ fontSize: 12, color: 'var(--text)', lineHeight: 1.6 }}>{selected.description}</p>
+                </div>
+
+                <div>
+                  <p style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>Impact</p>
+                  <p style={{ fontSize: 12, color: 'var(--text)', lineHeight: 1.6, padding: '8px 12px', background: 'var(--surface-2)', borderRadius: 6, borderLeft: '2px solid #10b981' }}>{selected.technicalImpact}</p>
+                </div>
+
+                <div>
+                  <p style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>
+                    Adopting Systems ({selected.adoptingSystems.length})
+                  </p>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4, maxHeight: 160, overflowY: 'auto' }}>
+                    {selected.adoptingSystems.map((s, i) => (
+                      <div key={i} style={{ fontSize: 12, color: 'var(--text)', padding: '5px 8px', background: 'var(--surface-2)', borderRadius: 5, border: '1px solid var(--border-subtle)' }}>
+                        {s}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: 13, padding: 32 }}>
+                Select a feature to see details
+              </div>
+            )}
+          </div>
+        </div>
+      ) : (
+        <div className="surface" style={{ padding: 24 }}>
+          <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 16 }}>Feature frequency — number of systems implementing each feature</p>
+          <div style={{ height: 380 }}>
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData} layout="vertical" margin={{ top: 5, right: 30, left: 10, bottom: 5 }}>
-                <XAxis type="number" stroke="#64748B" fontSize={12} />
-                <YAxis dataKey="name" type="category" stroke="#94A3B8" fontSize={11} width={170} />
-                <Tooltip
-                  contentStyle={{ backgroundColor: '#0F172A', borderColor: '#334155', borderRadius: '8px', color: '#FFF' }}
-                  formatter={(value: any) => [`${value} Systems`, 'System Count']}
-                  labelFormatter={(label, payload) => payload[0]?.payload?.fullName || label}
-                />
+              <BarChart data={chartData} layout="vertical" margin={{ top: 0, right: 16, left: 8, bottom: 0 }}>
+                <XAxis type="number" stroke="var(--border)" tick={{ fontSize: 11, fill: 'var(--text-muted)' }} />
+                <YAxis dataKey="name" type="category" stroke="var(--border)" tick={{ fontSize: 11, fill: 'var(--text-muted)' }} width={190} />
+                <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255,255,255,0.03)' }} />
                 <Bar dataKey="systems" radius={[0, 4, 4, 0]}>
-                  {chartData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  {chartData.map((_, i) => (
+                    <Cell key={i} fill={COLORS[i % COLORS.length]} />
                   ))}
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
-
-        {/* Feature Category Distribution Pie */}
-        <div className="glass-panel p-6 rounded-2xl border border-slate-800 flex flex-col justify-between">
-          <h3 className="text-lg font-semibold text-white mb-2">Category Breakdown</h3>
-          <div className="h-64 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={chartData.slice(0, 6)}
-                  dataKey="systems"
-                  nameKey="name"
-                  cx="50%"
-                  cy="50%"
-                  outerRadius={75}
-                  innerRadius={45}
-                  paddingAngle={4}
-                >
-                  {chartData.slice(0, 6).map((entry, index) => (
-                    <Cell key={`pie-cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip contentStyle={{ backgroundColor: '#0F172A', borderColor: '#334155', borderRadius: '8px' }} />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-          <div className="text-center text-xs text-slate-400">
-            Top feature domains categorized by system adoption density
-          </div>
-        </div>
-      </div>
-
-      {/* Feature Ranking Table & Selected Detail Drawer */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Table List */}
-        <div className="lg:col-span-2 glass-panel rounded-2xl border border-slate-800 overflow-hidden">
-          <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between">
-            <h3 className="font-semibold text-white">Ranked Feature Inventory ({features.length} Features)</h3>
-            <span className="text-xs text-indigo-400 font-mono">Rank 1 to {features.length}</span>
-          </div>
-
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm text-slate-300">
-              <thead className="bg-slate-900/80 text-xs uppercase text-slate-400 font-mono">
-                <tr>
-                  <th className="py-3 px-4">Rank</th>
-                  <th className="py-3 px-4">Feature Name</th>
-                  <th className="py-3 px-4">Category</th>
-                  <th className="py-3 px-4 text-center">Systems</th>
-                  <th className="py-3 px-4 text-center">Coverage</th>
-                  <th className="py-3 px-4 text-right">Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-800">
-                {features.map((item) => (
-                  <tr
-                    key={item.rank}
-                    onClick={() => setSelectedFeature(item)}
-                    className={`cursor-pointer transition-colors hover:bg-slate-800/60 ${
-                      selectedFeature?.rank === item.rank ? 'bg-indigo-950/40 border-l-4 border-indigo-500' : ''
-                    }`}
-                  >
-                    <td className="py-3 px-4 font-mono font-bold text-indigo-400">#{item.rank}</td>
-                    <td className="py-3 px-4 font-medium text-white">{item.featureName}</td>
-                    <td className="py-3 px-4 text-xs text-slate-400">
-                      <span className="px-2 py-1 bg-slate-800 rounded-md border border-slate-700">
-                        {item.category}
-                      </span>
-                    </td>
-                    <td className="py-3 px-4 text-center font-bold font-mono text-cyan-400">{item.systemCount}</td>
-                    <td className="py-3 px-4 text-center font-mono text-xs">{item.percentageOfSystems}%</td>
-                    <td className="py-3 px-4 text-right">
-                      <ChevronRight className="w-4 h-4 inline-block text-slate-500" />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* Selected Feature Detail Card */}
-        <div className="glass-panel p-6 rounded-2xl border border-indigo-500/30 flex flex-col justify-between">
-          {selectedFeature ? (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="px-3 py-1 bg-indigo-600/30 border border-indigo-500/40 text-indigo-300 rounded-full text-xs font-mono font-semibold">
-                  Rank #{selectedFeature.rank} Feature
-                </span>
-                <span className="text-xs text-slate-400 font-mono">
-                  {selectedFeature.systemCount} Systems ({selectedFeature.percentageOfSystems}%)
-                </span>
-              </div>
-
-              <h4 className="text-xl font-bold text-white leading-tight">
-                {selectedFeature.featureName}
-              </h4>
-
-              <div className="text-xs text-indigo-300 bg-slate-900/60 p-3 rounded-lg border border-slate-800">
-                <strong className="text-slate-200">Category: </strong>{selectedFeature.category}
-              </div>
-
-              <div>
-                <h5 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Description</h5>
-                <p className="text-xs text-slate-300 leading-relaxed bg-slate-900/40 p-3 rounded-lg">
-                  {selectedFeature.description}
-                </p>
-              </div>
-
-              <div>
-                <h5 className="text-xs font-semibold text-emerald-400 uppercase tracking-wider mb-1 flex items-center gap-1">
-                  <Info className="w-3.5 h-3.5" /> Technical Impact
-                </h5>
-                <p className="text-xs text-slate-300 bg-emerald-950/20 border border-emerald-900/50 p-3 rounded-lg">
-                  {selectedFeature.technicalImpact}
-                </p>
-              </div>
-
-              <div>
-                <h5 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Adopting Systems / Papers</h5>
-                <ul className="space-y-1.5 max-h-36 overflow-y-auto pr-1">
-                  {selectedFeature.adoptingSystems.map((sys, idx) => (
-                    <li key={idx} className="text-xs text-slate-300 bg-slate-900 p-2 rounded border border-slate-800 flex items-start gap-2">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-cyan-400 shrink-0 mt-0.5" />
-                      <span>{sys}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-          ) : (
-            <div className="text-center py-12 text-slate-500">
-              Select a feature from the table to view details.
-            </div>
-          )}
-        </div>
-      </div>
+      )}
     </div>
   );
 };

@@ -4,215 +4,226 @@ import React, { useState, useEffect } from 'react';
 import { BenchmarkResult, SummarizeResponse } from '../lib/types';
 import { fetchBenchmarkResults, fetchSerpSummary } from '../lib/api';
 import {
-  LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend
+  LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
 } from 'recharts';
-import { Activity, Zap, Search, Sparkles, Clock, Layers, ArrowUpRight, CheckCircle2 } from 'lucide-react';
+
+const CustomTooltip = ({ active, payload, label }: any) => {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="surface" style={{ padding: '10px 14px' }}>
+      <p style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>{label} threads</p>
+      {payload.map((p: any) => (
+        <p key={p.dataKey} style={{ fontSize: 13, fontWeight: 600, color: p.stroke }}>{p.name}: {p.value}</p>
+      ))}
+    </div>
+  );
+};
 
 export const MultithreadBenchmarkTab: React.FC = () => {
   const [benchmarks, setBenchmarks] = useState<BenchmarkResult[]>([]);
-  const [loadingBenchmark, setLoadingBenchmark] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('transformer hotspot mapping');
-  const [domainFilter, setDomainFilter] = useState('ALL');
-  const [summaryResponse, setSummaryResponse] = useState<SummarizeResponse | null>(null);
+  const [loadingBench, setLoadingBench] = useState(false);
+  const [query, setQuery] = useState('');
+  const [domain, setDomain] = useState('ALL');
+  const [summary, setSummary] = useState<SummarizeResponse | null>(null);
   const [loadingSummary, setLoadingSummary] = useState(false);
+  const [activeMetric, setActiveMetric] = useState<'speedup' | 'throughput' | 'time'>('speedup');
 
   const runBenchmark = async () => {
-    setLoadingBenchmark(true);
-    const results = await fetchBenchmarkResults();
-    setBenchmarks(results);
-    setLoadingBenchmark(false);
+    setLoadingBench(true);
+    const r = await fetchBenchmarkResults();
+    setBenchmarks(r);
+    setLoadingBench(false);
   };
 
-  const handleSearch = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
+  const handleSummarize = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    if (!query.trim()) return;
     setLoadingSummary(true);
-    const res = await fetchSerpSummary(searchQuery, domainFilter);
-    setSummaryResponse(res);
+    const r = await fetchSerpSummary(query, domain);
+    setSummary(r);
     setLoadingSummary(false);
   };
 
-  useEffect(() => {
-    runBenchmark();
-    handleSearch();
-  }, []);
+  useEffect(() => { runBenchmark(); }, []);
+
+  const chartDataKey = activeMetric === 'speedup' ? 'speedup'
+    : activeMetric === 'throughput' ? 'throughputPapersPerSec'
+    : 'executionTimeMs';
+
+  const metricLabel = activeMetric === 'speedup' ? 'Speedup (×)'
+    : activeMetric === 'throughput' ? 'Papers / sec'
+    : 'Execution time (ms)';
+
+  const metricColor = activeMetric === 'speedup' ? '#f59e0b'
+    : activeMetric === 'throughput' ? '#10b981'
+    : '#6366f1';
 
   return (
-    <div className="space-y-8">
-      {/* Benchmark Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 glass-panel p-6 rounded-2xl border border-amber-500/20">
-        <div>
-          <div className="flex items-center gap-2 text-amber-400 text-sm font-semibold mb-1">
-            <Zap className="w-4 h-4" />
-            <span>Parallel Performance Metrics</span>
-          </div>
-          <h2 className="text-2xl font-bold text-white">
-            Multithreaded Benchmark &amp; Execution Analytics
-          </h2>
-          <p className="text-sm text-slate-400 mt-1 max-w-3xl">
-            Java <code className="text-amber-300 font-mono">ExecutorService</code> thread pool evaluation measuring scaling speedup, throughput, and execution latency across worker allocations (1 to 16 threads).
-          </p>
-        </div>
+    <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
 
-        <button
-          onClick={runBenchmark}
-          disabled={loadingBenchmark}
-          className="flex items-center gap-2 px-4 py-2.5 bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-xs font-semibold shadow-lg shadow-amber-600/30 transition disabled:opacity-50"
-        >
-          <Activity className={`w-4 h-4 ${loadingBenchmark ? 'animate-spin' : ''}`} />
-          <span>{loadingBenchmark ? 'Running Threads...' : 'Re-Run Benchmark'}</span>
-        </button>
+      {/* ── Benchmark Section ── */}
+      <div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+          <span className="tag tag-amber">Benchmark</span>
+          <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Concurrency performance</span>
+        </div>
+        <h2 style={{ fontSize: 20, fontWeight: 600, color: 'white', margin: 0 }}>Multithreaded Execution Benchmark</h2>
+        <p style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 4 }}>
+          Java <span className="mono" style={{ color: '#a5b4fc', fontSize: 12 }}>ExecutorService</span> thread pool scaling — 1 to 16 workers.
+        </p>
       </div>
 
-      {/* Benchmark Visualizations */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Speedup & Execution Time Line Chart */}
-        <div className="glass-panel p-6 rounded-2xl border border-slate-800">
-          <h3 className="text-lg font-semibold text-white mb-2 flex items-center justify-between">
-            <span>Parallel Speedup Factor</span>
-            <span className="text-xs text-amber-400 font-mono">Speedup ($T_1 / T_N$)</span>
-          </h3>
-          <div className="h-64 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={benchmarks} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#1E293B" />
-                <XAxis dataKey="threadCount" stroke="#64748B" label={{ value: 'Threads', position: 'insideBottom', offset: -5 }} />
-                <YAxis stroke="#94A3B8" />
-                <Tooltip contentStyle={{ backgroundColor: '#0F172A', borderColor: '#334155', borderRadius: '8px' }} />
-                <Legend />
-                <Line type="monotone" dataKey="speedup" name="Parallel Speedup (x)" stroke="#F59E0B" strokeWidth={3} dot={{ r: 5 }} />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        {/* Throughput Line Chart */}
-        <div className="glass-panel p-6 rounded-2xl border border-slate-800">
-          <h3 className="text-lg font-semibold text-white mb-2 flex items-center justify-between">
-            <span>Throughput (Papers / Sec)</span>
-            <span className="text-xs text-emerald-400 font-mono">Execution Rate</span>
-          </h3>
-          <div className="h-64 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={benchmarks} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#1E293B" />
-                <XAxis dataKey="threadCount" stroke="#64748B" />
-                <YAxis stroke="#94A3B8" />
-                <Tooltip contentStyle={{ backgroundColor: '#0F172A', borderColor: '#334155', borderRadius: '8px' }} />
-                <Legend />
-                <Line type="monotone" dataKey="throughputPapersPerSec" name="Throughput (papers/sec)" stroke="#10B981" strokeWidth={3} dot={{ r: 5 }} />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-      </div>
-
-      {/* Semantic SERP Content Summarizer Component */}
-      <div className="glass-panel p-6 rounded-2xl border border-indigo-500/30 space-y-6">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-4">
-          <div>
-            <div className="flex items-center gap-2 text-indigo-400 text-sm font-semibold mb-1">
-              <Sparkles className="w-4 h-4" />
-              <span>Semantic SERP Engine</span>
-            </div>
-            <h3 className="text-xl font-bold text-white">
-              Semantic Search Query Summarizer
-            </h3>
-            <p className="text-xs text-slate-400">
-              Summarizes key SERP content instead of merely returning raw links and titles.
-            </p>
+      <div className="surface" style={{ padding: 20 }}>
+        {/* Top controls */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, gap: 10, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: 4, background: 'var(--surface-2)', borderRadius: 8, padding: 3, border: '1px solid var(--border-subtle)' }}>
+            {(['speedup', 'throughput', 'time'] as const).map(m => (
+              <button key={m} onClick={() => setActiveMetric(m)} style={{
+                padding: '4px 12px', fontSize: 12, fontWeight: 500, borderRadius: 6, border: 'none',
+                background: activeMetric === m ? 'var(--surface)' : 'transparent',
+                color: activeMetric === m ? 'white' : 'var(--text-muted)', cursor: 'pointer', transition: 'all 0.15s', whiteSpace: 'nowrap',
+              }}>
+                {m === 'speedup' ? 'Speedup' : m === 'throughput' ? 'Throughput' : 'Exec. Time'}
+              </button>
+            ))}
           </div>
 
-          <form onSubmit={handleSearch} className="flex items-center gap-2">
-            <select
-              value={domainFilter}
-              onChange={(e) => setDomainFilter(e.target.value)}
-              className="bg-slate-900 border border-slate-700 text-xs text-slate-200 rounded-lg px-3 py-2 focus:outline-none"
-            >
-              <option value="ALL">All Domains</option>
-              <option value="CRIME_REPORTING">Crime Systems</option>
-              <option value="DEEP_LEARNING">Deep Learning</option>
-            </select>
-
-            <div className="relative">
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Enter query terms..."
-                className="bg-slate-900 border border-slate-700 text-xs text-white rounded-lg pl-8 pr-3 py-2 w-64 focus:outline-none focus:border-indigo-500"
-              />
-              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" />
-            </div>
-
-            <button
-              type="submit"
-              disabled={loadingSummary}
-              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold transition"
-            >
-              {loadingSummary ? 'Parsing...' : 'Summarize'}
-            </button>
-          </form>
+          <button className="btn btn-ghost" onClick={runBenchmark} disabled={loadingBench} style={{ fontSize: 12 }}>
+            {loadingBench ? <svg className="spin" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> : null}
+            {loadingBench ? 'Running…' : 'Re-run'}
+          </button>
         </div>
 
-        {/* Summary Output */}
-        {summaryResponse && (
-          <div className="space-y-4">
-            <div className="bg-indigo-950/40 border border-indigo-500/30 p-5 rounded-xl">
-              <div className="flex items-center justify-between text-xs text-indigo-300 font-mono mb-2">
-                <span className="flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                  Synthesized SERP Content Summary
-                </span>
-                <span className="flex items-center gap-1">
-                  <Clock className="w-3 h-3 text-slate-400" />
-                  {summaryResponse.executionTimeMs} ms
-                </span>
+        {/* Chart */}
+        <div style={{ height: 240 }}>
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={benchmarks} margin={{ top: 4, right: 12, left: 0, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="4 4" stroke="var(--border-subtle)" />
+              <XAxis dataKey="threadCount" stroke="var(--border)" tick={{ fontSize: 11, fill: 'var(--text-muted)' }} label={{ value: 'Threads', position: 'insideBottomRight', offset: -4, style: { fontSize: 11, fill: 'var(--text-muted)' } }} />
+              <YAxis stroke="var(--border)" tick={{ fontSize: 11, fill: 'var(--text-muted)' }} />
+              <Tooltip content={<CustomTooltip />} cursor={{ stroke: 'var(--border)', strokeWidth: 1 }} />
+              <Line type="monotone" dataKey={chartDataKey} name={metricLabel} stroke={metricColor} strokeWidth={2} dot={{ r: 4, fill: metricColor, strokeWidth: 0 }} activeDot={{ r: 6, strokeWidth: 0 }} />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* Benchmark stats row */}
+        {benchmarks.length > 0 && (
+          <div style={{ display: 'grid', gridTemplateColumns: `repeat(${benchmarks.length}, 1fr)`, gap: 8, marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--border-subtle)' }}>
+            {benchmarks.map(b => (
+              <div key={b.threadCount} style={{ textAlign: 'center' }}>
+                <p style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 3 }}>{b.threadCount}T</p>
+                <p style={{ fontSize: 14, fontWeight: 700, color: 'white', lineHeight: 1 }}>{b.speedup}×</p>
+                <p style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 2 }}>{b.executionTimeMs}ms</p>
               </div>
-              <p className="text-sm text-slate-200 leading-relaxed font-sans">
-                {summaryResponse.summaryText}
-              </p>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* ── SERP Summarizer ── */}
+      <div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+          <span className="tag tag-accent">Semantic SERP</span>
+          <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Query-to-summary engine</span>
+        </div>
+        <h2 style={{ fontSize: 20, fontWeight: 600, color: 'white', margin: 0 }}>Search & Summarize</h2>
+        <p style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 4 }}>
+          Enter any keyword — get a semantic synthesis of matching SERP content instead of raw links.
+        </p>
+      </div>
+
+      <div className="surface" style={{ padding: 20 }}>
+        <form onSubmit={handleSummarize} style={{ display: 'flex', gap: 8, marginBottom: summary ? 20 : 0 }}>
+          <div style={{ position: 'relative', flex: 1 }}>
+            <svg style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-dim)' }} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+            <input
+              className="input"
+              style={{ paddingLeft: 34 }}
+              placeholder="e.g. spatial hotspot mapping, transformer attention, GIS encryption…"
+              value={query}
+              onChange={e => setQuery(e.target.value)}
+            />
+          </div>
+
+          <select
+            className="input"
+            style={{ width: 'auto', flexShrink: 0 }}
+            value={domain}
+            onChange={e => setDomain(e.target.value)}
+          >
+            <option value="ALL">All domains</option>
+            <option value="CRIME_REPORTING">Crime systems</option>
+            <option value="DEEP_LEARNING">Deep learning</option>
+          </select>
+
+          <button
+            type="submit"
+            className="btn btn-primary"
+            style={{ flexShrink: 0 }}
+            disabled={loadingSummary || !query.trim()}
+          >
+            {loadingSummary ? <svg className="spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> : null}
+            {loadingSummary ? 'Parsing…' : 'Summarize'}
+          </button>
+        </form>
+
+        {summary && (
+          <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div className="divider" />
+
+            {/* Query + timing */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                {summary.extractedKeywords.map((kw, i) => (
+                  <span key={i} className="tag tag-accent">{kw}</span>
+                ))}
+              </div>
+              <span style={{ fontSize: 11, color: 'var(--text-muted)', flexShrink: 0 }} className="mono">{summary.executionTimeMs}ms</span>
             </div>
 
-            {/* Relevant Papers Grid */}
-            <div>
-              <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">
-                Top Relevant Papers ({summaryResponse.matchedPapersCount} Matched)
-              </h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {summaryResponse.topRelevantPapers.map((paper) => (
-                  <div key={paper.id} className="bg-slate-900/80 border border-slate-800 p-4 rounded-xl space-y-2">
-                    <div className="flex items-start justify-between gap-2">
-                      <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded ${
-                        paper.domain === 'CRIME_REPORTING' ? 'bg-emerald-950 text-emerald-400 border border-emerald-800' : 'bg-cyan-950 text-cyan-400 border border-cyan-800'
-                      }`}>
-                        {paper.domain}
-                      </span>
-                      <span className="text-xs font-mono text-slate-500">{paper.year}</span>
-                    </div>
+            {/* Summary text */}
+            <div style={{ padding: '14px 16px', background: 'var(--surface-2)', borderRadius: 8, borderLeft: '2px solid #6366f1' }}>
+              <p style={{ fontSize: 13, color: 'var(--text)', lineHeight: 1.7, margin: 0 }}>{summary.summaryText}</p>
+            </div>
 
-                    <h5 className="text-xs font-bold text-white leading-snug">{paper.title}</h5>
-                    <p className="text-[11px] text-slate-400">{paper.authors} &bull; <em className="text-slate-300">{paper.journal}</em></p>
-                    <p className="text-xs text-slate-300 line-clamp-2 bg-slate-950/60 p-2 rounded text-[11px]">
+            {/* Matched papers */}
+            <div>
+              <p style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>
+                {summary.matchedPapersCount} Matched Papers
+              </p>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 10 }}>
+                {summary.topRelevantPapers.map(paper => (
+                  <div key={paper.id} style={{ background: 'var(--surface-2)', border: '1px solid var(--border-subtle)', borderRadius: 8, padding: 14 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                      <span className={paper.domain === 'CRIME_REPORTING' ? 'tag tag-green' : 'tag tag-cyan'} style={{ fontSize: 10 }}>
+                        {paper.domain === 'CRIME_REPORTING' ? 'Crime' : 'Deep Learning'}
+                      </span>
+                      <span style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'JetBrains Mono, monospace' }}>{paper.year}</span>
+                    </div>
+                    <p style={{ fontSize: 13, fontWeight: 600, color: 'white', lineHeight: 1.35, marginBottom: 4 }}>{paper.title}</p>
+                    <p style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 8 }}>{paper.authors}</p>
+                    <p style={{ fontSize: 11, color: 'var(--text)', lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                       {paper.abstractText}
                     </p>
-
-                    <div className="flex items-center justify-between text-[11px] pt-1">
-                      <span className="text-indigo-400 font-mono truncate max-w-[200px]">
+                    <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid var(--border-subtle)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: 10, color: '#a5b4fc', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 180 }}>
                         {paper.featuresOrSubheadings[0]}
                       </span>
-                      <a
-                        href={paper.url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-xs text-cyan-400 hover:underline flex items-center gap-0.5"
-                      >
-                        DOI/Link <ArrowUpRight className="w-3 h-3" />
+                      <a href={paper.url} target="_blank" rel="noreferrer" style={{ fontSize: 11, color: '#06b6d4', textDecoration: 'none', flexShrink: 0, marginLeft: 8 }}>
+                        DOI ↗
                       </a>
                     </div>
                   </div>
                 ))}
               </div>
             </div>
+          </div>
+        )}
+
+        {!summary && (
+          <div style={{ textAlign: 'center', padding: '32px 0', color: 'var(--text-muted)', fontSize: 13 }}>
+            Enter a query above to semantically synthesize SERP content
           </div>
         )}
       </div>

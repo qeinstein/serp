@@ -1,113 +1,113 @@
 'use client';
 
 import React from 'react';
-import { Layers, Server, Globe, Cpu, Database, ArrowRight, ShieldCheck } from 'lucide-react';
 
-export const ArchitectureDiagram: React.FC = () => {
-  return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div className="glass-panel p-6 rounded-2xl border border-purple-500/20">
-        <div className="flex items-center gap-2 text-purple-400 text-sm font-semibold mb-1">
-          <Layers className="w-4 h-4" />
-          <span>System Topology</span>
+export const ArchitectureDiagram: React.FC = () => (
+  <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+    <div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+        <span className="tag tag-accent">Architecture</span>
+        <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>System topology</span>
+      </div>
+      <h2 style={{ fontSize: 20, fontWeight: 600, color: 'white', margin: 0 }}>Full-Stack Concurrency Architecture</h2>
+      <p style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 4 }}>
+        Spring Boot 3 multithreaded JVM on <strong style={{ color: 'var(--text)' }}>Render</strong> · Next.js 14 on <strong style={{ color: 'var(--text)' }}>Vercel</strong>
+      </p>
+    </div>
+
+    {/* Flow diagram */}
+    <div className="surface" style={{ padding: 24 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr auto 1fr', alignItems: 'center', gap: 8 }}>
+        {/* Client */}
+        <div style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 10, padding: 18 }}>
+          <p style={{ fontSize: 10, color: '#a5b4fc', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Client Tier · Vercel</p>
+          <p style={{ fontSize: 14, fontWeight: 600, color: 'white', marginBottom: 8 }}>Next.js 14</p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            {['React 18 + TypeScript', 'Tailwind CSS', 'Recharts Visualization', 'Live Keyword Search', 'Thread Slider Controls'].map(f => (
+              <p key={f} style={{ fontSize: 11, color: 'var(--text-muted)' }}>· {f}</p>
+            ))}
+          </div>
         </div>
-        <h2 className="text-2xl font-bold text-white">
-          Full-Stack Concurrency Architecture
-        </h2>
-        <p className="text-sm text-slate-400 mt-1 max-w-3xl">
-          Visual overview of the distributed web app deployment: Spring Boot 3 multi-threaded JVM backend deployed on <strong className="text-purple-300">Render</strong> and Next.js 14 frontend hosted on <strong className="text-purple-300">Vercel</strong>.
-        </p>
+
+        {/* Arrow */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+          <span style={{ fontSize: 11, color: 'var(--text-muted)' }} className="mono">HTTP/REST</span>
+          <svg width="48" height="16" viewBox="0 0 48 16" fill="none">
+            <path d="M0 8h44m-8-6 8 6-8 6" stroke="#374151" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+          <span style={{ fontSize: 11, color: 'var(--text-muted)' }} className="mono">JSON · CORS</span>
+        </div>
+
+        {/* Backend */}
+        <div style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 10, padding: 18 }}>
+          <p style={{ fontSize: 10, color: '#c4b5fd', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Application Tier · Render</p>
+          <p style={{ fontSize: 14, fontWeight: 600, color: 'white', marginBottom: 8 }}>Spring Boot 3.3.4</p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            {['Java 17 OpenJDK', 'ExecutorService Thread Pool', 'CompletableFuture Pipelines', 'REST API + CORS', 'Self-Ping Scheduler'].map(f => (
+              <p key={f} style={{ fontSize: 11, color: 'var(--text-muted)' }}>· {f}</p>
+            ))}
+          </div>
+        </div>
+
+        {/* Arrow */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+          <span style={{ fontSize: 11, color: 'var(--text-muted)' }} className="mono">in-memory</span>
+          <svg width="48" height="16" viewBox="0 0 48 16" fill="none">
+            <path d="M0 8h44m-8-6 8 6-8 6" stroke="#374151" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+          <span style={{ fontSize: 11, color: 'var(--text-muted)' }} className="mono">JVM heap</span>
+        </div>
+
+        {/* Data */}
+        <div style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 10, padding: 18 }}>
+          <p style={{ fontSize: 10, color: '#6ee7b7', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Data Tier · In-Memory</p>
+          <p style={{ fontSize: 14, fontWeight: 600, color: 'white', marginBottom: 8 }}>Paper Dataset</p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            {['10 Crime-Reporting Systems', '8 Deep Learning Papers', 'ConcurrentHashMap Store', 'Feature Taxonomy (12)', 'Subheading Taxonomy (14)'].map(f => (
+              <p key={f} style={{ fontSize: 11, color: 'var(--text-muted)' }}>· {f}</p>
+            ))}
+          </div>
+        </div>
       </div>
 
-      {/* Schematic Container */}
-      <div className="glass-panel p-8 rounded-2xl border border-slate-800 space-y-8">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative">
-          {/* Client Tier */}
-          <div className="bg-slate-900/90 border border-indigo-500/40 p-6 rounded-xl space-y-3 relative">
-            <div className="flex items-center gap-2 text-indigo-400 font-bold text-sm">
-              <Globe className="w-5 h-5" />
-              <span>1. CLIENT TIER (Vercel)</span>
+      {/* Endpoints */}
+      <div style={{ marginTop: 24, paddingTop: 20, borderTop: '1px solid var(--border-subtle)' }}>
+        <p style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 12 }}>REST Endpoints</p>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 8 }}>
+          {[
+            { method: 'GET', path: '/api/v1/health', desc: 'Health check' },
+            { method: 'GET', path: '/api/v1/serp/crime-features', desc: 'Task 1 features' },
+            { method: 'GET', path: '/api/v1/serp/dl-subheadings', desc: 'Task 2 sub-headings' },
+            { method: 'GET', path: '/api/v1/serp/benchmark', desc: 'Thread benchmark' },
+            { method: 'POST', path: '/api/v1/serp/summarize', desc: 'SERP summarizer' },
+          ].map(ep => (
+            <div key={ep.path} style={{ display: 'flex', gap: 8, alignItems: 'flex-start', padding: '8px 10px', background: 'var(--surface)', borderRadius: 6, border: '1px solid var(--border-subtle)' }}>
+              <span style={{ fontSize: 10, fontWeight: 700, color: ep.method === 'GET' ? '#6ee7b7' : '#fcd34d', flexShrink: 0, marginTop: 1 }} className="mono">{ep.method}</span>
+              <div>
+                <p style={{ fontSize: 11, color: 'white', fontFamily: 'JetBrains Mono, monospace', marginBottom: 2 }}>{ep.path}</p>
+                <p style={{ fontSize: 11, color: 'var(--text-muted)' }}>{ep.desc}</p>
+              </div>
             </div>
-            <p className="text-xs text-slate-300">
-              Next.js 14 App Router (React 18, TypeScript, Tailwind CSS, Recharts)
-            </p>
-            <ul className="text-xs text-slate-400 space-y-1 font-mono">
-              <li>&bull; Interactive Visualizations</li>
-              <li>&bull; Worker Thread Sliders</li>
-              <li>&bull; SERP Summarizer UI</li>
-              <li>&bull; Dynamic API Hydration</li>
-            </ul>
-            <div className="absolute -right-3 top-1/2 -translate-y-1/2 hidden md:block">
-              <ArrowRight className="w-6 h-6 text-indigo-500" />
-            </div>
-          </div>
-
-          {/* Application Tier */}
-          <div className="bg-slate-900/90 border border-purple-500/40 p-6 rounded-xl space-y-3 relative">
-            <div className="flex items-center gap-2 text-purple-400 font-bold text-sm">
-              <Server className="w-5 h-5" />
-              <span>2. BACKEND TIER (Render)</span>
-            </div>
-            <p className="text-xs text-slate-300">
-              Spring Boot 3.3.4 (Java 17 OpenJDK, Dockerized Container)
-            </p>
-            <ul className="text-xs text-slate-400 space-y-1 font-mono">
-              <li>&bull; REST Endpoints (CORS enabled)</li>
-              <li>&bull; ExecutorService Workers</li>
-              <li>&bull; CompletableFuture Pipelines</li>
-              <li>&bull; PingScheduler (Keep-Alive)</li>
-            </ul>
-            <div className="absolute -right-3 top-1/2 -translate-y-1/2 hidden md:block">
-              <ArrowRight className="w-6 h-6 text-purple-500" />
-            </div>
-          </div>
-
-          {/* Core Engine & Data Tier */}
-          <div className="bg-slate-900/90 border border-cyan-500/40 p-6 rounded-xl space-y-3">
-            <div className="flex items-center gap-2 text-cyan-400 font-bold text-sm">
-              <Cpu className="w-5 h-5" />
-              <span>3. CONCURRENCY &amp; DATA TIER</span>
-            </div>
-            <p className="text-xs text-slate-300">
-              In-Memory Thread Pool Engine &amp; Academic Datasets
-            </p>
-            <ul className="text-xs text-slate-400 space-y-1 font-mono">
-              <li>&bull; Task 1: Crime-Reporting (12 Features)</li>
-              <li>&bull; Task 2: DL Subheadings (12 Sections)</li>
-              <li>&bull; Parallel Speedup Benchmarking</li>
-              <li>&bull; Zero Race Condition Guarantee</li>
-            </ul>
-          </div>
-        </div>
-
-        {/* Feature Highlights Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-4 border-t border-slate-800">
-          <div className="bg-slate-950/60 p-4 rounded-xl border border-slate-800">
-            <div className="text-xs text-indigo-400 font-mono font-bold mb-1">Deployment Engine</div>
-            <div className="text-sm font-semibold text-white">Docker &amp; Vercel</div>
-            <div className="text-xs text-slate-400 mt-1">Multi-stage Docker build for Render + Vercel static/dynamic web host.</div>
-          </div>
-
-          <div className="bg-slate-950/60 p-4 rounded-xl border border-slate-800">
-            <div className="text-xs text-emerald-400 font-mono font-bold mb-1">Concurrency Primitives</div>
-            <div className="text-sm font-semibold text-white">ExecutorService</div>
-            <div className="text-xs text-slate-400 mt-1">Thread-safe aggregators using Java thread pools and atomic synchronization.</div>
-          </div>
-
-          <div className="bg-slate-950/60 p-4 rounded-xl border border-slate-800">
-            <div className="text-xs text-amber-400 font-mono font-bold mb-1">SERP Summarizer</div>
-            <div className="text-sm font-semibold text-white">Semantic Synthesis</div>
-            <div className="text-xs text-slate-400 mt-1">Summarizes paper abstracts and features directly for queries.</div>
-          </div>
-
-          <div className="bg-slate-950/60 p-4 rounded-xl border border-slate-800">
-            <div className="text-xs text-cyan-400 font-mono font-bold mb-1">Data Visualizer</div>
-            <div className="text-sm font-semibold text-white">Recharts Engine</div>
-            <div className="text-xs text-slate-400 mt-1">Responsive bar charts, pie charts, and speedup trend lines.</div>
-          </div>
+          ))}
         </div>
       </div>
     </div>
-  );
-};
+
+    {/* Concurrency model */}
+    <div className="surface" style={{ padding: 20 }}>
+      <p style={{ fontSize: 13, fontWeight: 600, color: 'white', marginBottom: 12 }}>Concurrency Primitives</p>
+      <div style={{ background: 'var(--surface-2)', borderRadius: 8, padding: 16, fontFamily: 'JetBrains Mono, monospace', fontSize: 12, lineHeight: 1.7, color: '#94a3b8', overflowX: 'auto' }}>
+        <span style={{ color: '#6366f1' }}>ExecutorService</span> executor = Executors.<span style={{ color: '#10b981' }}>newFixedThreadPool</span>(threadCount);<br />
+        <br />
+        papers.stream()<br />
+        {'  '}.<span style={{ color: '#10b981' }}>map</span>(paper {'→'} CompletableFuture.<span style={{ color: '#10b981' }}>runAsync</span>(() {'→'} {'{'}<br />
+        {'    '}<span style={{ color: '#6b7280' }}>// Parse paper, extract features concurrently</span><br />
+        {'    '}featureMap.<span style={{ color: '#10b981' }}>computeIfAbsent</span>(feature, k {'→'} <span style={{ color: '#6366f1' }}>synchronizedList</span>());<br />
+        {'  '}{'}'}, executor))<br />
+        {'  '}.<span style={{ color: '#10b981' }}>collect</span>(<span style={{ color: '#f59e0b' }}>Collectors</span>.toList());<br />
+        <br />
+        CompletableFuture.<span style={{ color: '#10b981' }}>allOf</span>(futures).<span style={{ color: '#10b981' }}>join</span>(); <span style={{ color: '#6b7280' }}>// barrier sync</span>
+      </div>
+    </div>
+  </div>
+);

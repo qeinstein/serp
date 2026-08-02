@@ -1,81 +1,55 @@
 'use client';
 
 import React from 'react';
-import { Cpu, ShieldAlert, BookOpen, Activity, Layers } from 'lucide-react';
+
+type Tab = 'crime' | 'dl' | 'benchmark' | 'arch';
 
 interface HeaderProps {
-  activeTab: 'crime' | 'dl' | 'benchmark' | 'arch';
-  setActiveTab: (tab: 'crime' | 'dl' | 'benchmark' | 'arch') => void;
+  activeTab: Tab;
+  setActiveTab: (tab: Tab) => void;
 }
+
+const tabs: { id: Tab; label: string }[] = [
+  { id: 'crime', label: 'Crime Systems' },
+  { id: 'dl', label: 'Deep Learning Papers' },
+  { id: 'benchmark', label: 'Benchmark' },
+  { id: 'arch', label: 'Architecture' },
+];
 
 export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab }) => {
   return (
-    <header className="sticky top-0 z-50 glass-panel border-b border-indigo-500/20 px-6 py-4">
-      <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-        {/* Brand Header */}
+    <header style={{ borderBottom: '1px solid var(--border)' }} className="bg-[var(--surface)] sticky top-0 z-50">
+      <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between gap-6">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-cyan-500 flex items-center justify-center shadow-lg shadow-indigo-500/25">
-            <Cpu className="w-6 h-6 text-white" />
+          <div className="w-6 h-6 rounded bg-indigo-500 flex items-center justify-center">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+              <rect x="1" y="1" width="4" height="4" rx="1" fill="white" />
+              <rect x="7" y="1" width="4" height="4" rx="1" fill="white" opacity="0.6" />
+              <rect x="1" y="7" width="4" height="4" rx="1" fill="white" opacity="0.6" />
+              <rect x="7" y="7" width="4" height="4" rx="1" fill="white" opacity="0.3" />
+            </svg>
           </div>
-          <div>
-            <h1 className="text-xl font-bold bg-gradient-to-r from-white via-slate-200 to-indigo-300 bg-clip-text text-transparent">
-              SERP Intelligence Platform
-            </h1>
-            <p className="text-xs text-indigo-300/80 font-mono">
-              Multithreaded Academic Feature Mining &amp; SERP Synthesis
-            </p>
-          </div>
+          <span className="text-sm font-semibold text-white tracking-tight">SERP Engine</span>
+          <span className="tag tag-accent">Assignment 1</span>
         </div>
 
-        {/* Navigation Tabs */}
-        <nav className="flex items-center gap-2 bg-slate-900/80 p-1.5 rounded-xl border border-slate-800">
-          <button
-            onClick={() => setActiveTab('crime')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-              activeTab === 'crime'
-                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
-            }`}
-          >
-            <ShieldAlert className="w-4 h-4 text-emerald-400" />
-            <span>Task 1: Crime Systems</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('dl')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-              activeTab === 'dl'
-                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
-            }`}
-          >
-            <BookOpen className="w-4 h-4 text-cyan-400" />
-            <span>Task 2: DL Sub-Headings</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('benchmark')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-              activeTab === 'benchmark'
-                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
-            }`}
-          >
-            <Activity className="w-4 h-4 text-amber-400" />
-            <span>Benchmark &amp; Summarizer</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('arch')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-              activeTab === 'arch'
-                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
-            }`}
-          >
-            <Layers className="w-4 h-4 text-purple-400" />
-            <span>Architecture</span>
-          </button>
+        <nav className="flex items-center gap-1">
+          {tabs.map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className="btn btn-ghost"
+              style={{
+                color: activeTab === tab.id ? 'white' : 'var(--text-muted)',
+                background: activeTab === tab.id ? 'var(--surface-2)' : 'transparent',
+                borderColor: activeTab === tab.id ? 'var(--border)' : 'transparent',
+                fontSize: '13px',
+                padding: '6px 12px',
+              }}
+            >
+              {tab.label}
+            </button>
+          ))}
         </nav>
       </div>
     </header>

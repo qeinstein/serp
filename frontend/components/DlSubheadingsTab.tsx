@@ -4,207 +4,219 @@ import React, { useState, useEffect } from 'react';
 import { SubHeadingResult } from '../lib/types';
 import { fetchDlSubheadings } from '../lib/api';
 import {
-  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell
+  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
 } from 'recharts';
-import { BookOpen, Sliders, FileText, Layout, ExternalLink, RefreshCw } from 'lucide-react';
 
-const COLORS = ['#06B6D4', '#6366F1', '#8B5CF6', '#10B981', '#F59E0B', '#EC4899', '#3B82F6', '#14B8A6'];
+const COLORS = ['#06b6d4', '#6366f1', '#8b5cf6', '#10b981', '#f59e0b', '#ec4899', '#3b82f6', '#14b8a6'];
+
+const CustomTooltip = ({ active, payload }: any) => {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="surface" style={{ padding: '10px 14px', minWidth: 160 }}>
+      <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>{payload[0]?.payload?.fullName}</p>
+      <p style={{ fontSize: 14, fontWeight: 600, color: 'white' }}>{payload[0]?.value} papers</p>
+    </div>
+  );
+};
 
 export const DlSubheadingsTab: React.FC = () => {
-  const [subheadings, setSubheadings] = useState<SubHeadingResult[]>([]);
+  const [items, setItems] = useState<SubHeadingResult[]>([]);
+  const [filtered, setFiltered] = useState<SubHeadingResult[]>([]);
   const [loading, setLoading] = useState(true);
   const [threadCount, setThreadCount] = useState(4);
-  const [selectedItem, setSelectedItem] = useState<SubHeadingResult | null>(null);
+  const [search, setSearch] = useState('');
+  const [selected, setSelected] = useState<SubHeadingResult | null>(null);
+  const [view, setView] = useState<'table' | 'chart'>('table');
 
-  const loadData = async (threads: number) => {
+  const load = async (threads: number) => {
     setLoading(true);
     const data = await fetchDlSubheadings(threads);
-    setSubheadings(data);
-    if (data.length > 0 && !selectedItem) {
-      setSelectedItem(data[0]);
-    }
+    setItems(data);
+    setFiltered(data);
+    if (data.length > 0) setSelected(data[0]);
     setLoading(false);
   };
 
-  useEffect(() => {
-    loadData(threadCount);
-  }, []);
+  useEffect(() => { load(threadCount); }, []);
 
-  const chartData = subheadings.map(sh => ({
-    name: sh.title.length > 25 ? sh.title.substring(0, 22) + '...' : sh.title,
+  useEffect(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) { setFiltered(items); return; }
+    setFiltered(items.filter(sh =>
+      sh.title.toLowerCase().includes(q) ||
+      sh.category.toLowerCase().includes(q) ||
+      sh.description.toLowerCase().includes(q) ||
+      sh.standardSectionHeader.toLowerCase().includes(q) ||
+      sh.samplePaperTitles.some(p => p.toLowerCase().includes(q))
+    ));
+  }, [search, items]);
+
+  const chartData = filtered.map(sh => ({
+    name: sh.title.length > 28 ? sh.title.slice(0, 26) + '…' : sh.title,
     fullName: sh.title,
     papers: sh.paperCount,
-    percentage: sh.occurrencePercentage
   }));
 
   return (
-    <div className="space-y-8">
-      {/* Section Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 glass-panel p-6 rounded-2xl border border-cyan-500/20">
-        <div>
-          <div className="flex items-center gap-2 text-cyan-400 text-sm font-semibold mb-1">
-            <BookOpen className="w-4 h-4" />
-            <span>Task 2 Specification</span>
-          </div>
-          <h2 className="text-2xl font-bold text-white">
-            Distinct Sub-Headings in Deep Learning Journal Papers
-          </h2>
-          <p className="text-sm text-slate-400 mt-1 max-w-3xl">
-            Multithreaded structural analysis extracting recurring section sub-headings across deep learning model publications (Transformers, ResNet, BERT, GANs, AlphaGo, Quantization).
-          </p>
+    <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+      {/* Page header */}
+      <div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+          <span className="tag tag-cyan">Task 2</span>
+          <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Deep Learning Journal Papers</span>
         </div>
+        <h2 style={{ fontSize: 20, fontWeight: 600, color: 'white', margin: 0 }}>Distinct Sub-Headings in Deep Learning Papers</h2>
+        <p style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 4 }}>
+          Structural section taxonomy extracted concurrently across DL model publications.
+        </p>
+      </div>
 
-        {/* Worker Threads Slider */}
-        <div className="flex items-center gap-4 bg-slate-900/90 p-3 rounded-xl border border-slate-800">
-          <div className="flex items-center gap-2">
-            <Sliders className="w-4 h-4 text-cyan-400" />
-            <span className="text-xs text-slate-300 font-medium">Worker Threads:</span>
-            <span className="text-sm font-bold text-cyan-400 font-mono">{threadCount}</span>
-          </div>
+      {/* Controls */}
+      <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+        <div style={{ position: 'relative', flex: '1 1 260px' }}>
+          <svg style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-dim)' }} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
           <input
-            type="range"
-            min="1"
-            max="16"
-            value={threadCount}
-            onChange={(e) => setThreadCount(parseInt(e.target.value))}
-            className="w-24 accent-cyan-500 cursor-pointer"
+            className="input"
+            style={{ paddingLeft: 34 }}
+            placeholder="Search sub-headings, sections, or paper titles…"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
           />
-          <button
-            onClick={() => loadData(threadCount)}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg text-xs font-semibold transition"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-            Run
-          </button>
-        </div>
-      </div>
-
-      {/* Chart Section */}
-      <div className="glass-panel p-6 rounded-2xl border border-slate-800">
-        <h3 className="text-lg font-semibold text-white mb-4 flex items-center justify-between">
-          <span>Sub-Heading Frequency in Journal Literature</span>
-          <span className="text-xs text-slate-400 font-mono">Paper Occurrence Count</span>
-        </h3>
-        <div className="h-72 w-full">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 40 }}>
-              <XAxis
-                dataKey="name"
-                stroke="#94A3B8"
-                fontSize={11}
-                angle={-25}
-                textAnchor="end"
-                interval={0}
-              />
-              <YAxis stroke="#64748B" fontSize={12} />
-              <Tooltip
-                contentStyle={{ backgroundColor: '#0F172A', borderColor: '#334155', borderRadius: '8px', color: '#FFF' }}
-                formatter={(val: any) => [`${val} Journal Papers`, 'Frequency']}
-                labelFormatter={(label, payload) => payload[0]?.payload?.fullName || label}
-              />
-              <Bar dataKey="papers" radius={[4, 4, 0, 0]}>
-                {chartData.map((entry, index) => (
-                  <Cell key={`cell-dl-${index}`} fill={COLORS[index % COLORS.length]} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
-
-      {/* Structural Hierarchy Grid & Detail Panel */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Sub-headings List */}
-        <div className="lg:col-span-2 glass-panel rounded-2xl border border-slate-800 overflow-hidden">
-          <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between">
-            <h3 className="font-semibold text-white">Extracted Structural Sub-Headings</h3>
-            <span className="text-xs text-cyan-400 font-mono">Ordered by Frequency</span>
-          </div>
-
-          <div className="divide-y divide-slate-800">
-            {subheadings.map((sh) => (
-              <div
-                key={sh.rank}
-                onClick={() => setSelectedItem(sh)}
-                className={`p-4 cursor-pointer transition-colors hover:bg-slate-800/60 flex items-center justify-between gap-4 ${
-                  selectedItem?.rank === sh.rank ? 'bg-cyan-950/30 border-l-4 border-cyan-400' : ''
-                }`}
-              >
-                <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-slate-900 flex items-center justify-center text-xs font-bold font-mono text-cyan-400 border border-slate-800 shrink-0 mt-0.5">
-                    #{sh.rank}
-                  </div>
-                  <div>
-                    <h4 className="font-medium text-white text-sm">{sh.title}</h4>
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className="text-xs text-slate-400 bg-slate-900 px-2 py-0.5 rounded border border-slate-800">
-                        {sh.category}
-                      </span>
-                      <span className="text-xs text-indigo-300 font-mono">
-                        {sh.standardSectionHeader}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="text-right shrink-0">
-                  <div className="text-sm font-bold font-mono text-cyan-400">{sh.paperCount} Papers</div>
-                  <div className="text-xs text-slate-500">{sh.occurrencePercentage}% Frequency</div>
-                </div>
-              </div>
-            ))}
-          </div>
         </div>
 
-        {/* Detail Panel */}
-        <div className="glass-panel p-6 rounded-2xl border border-cyan-500/30 flex flex-col justify-between">
-          {selectedItem ? (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="px-3 py-1 bg-cyan-600/30 border border-cyan-500/40 text-cyan-300 rounded-full text-xs font-mono font-semibold">
-                  {selectedItem.standardSectionHeader}
-                </span>
-                <span className="text-xs text-slate-400 font-mono">
-                  {selectedItem.occurrencePercentage}% of DL Papers
-                </span>
-              </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+          <span style={{ fontSize: 12, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>Threads</span>
+          <input type="range" min={1} max={16} value={threadCount}
+            onChange={e => setThreadCount(+e.target.value)}
+            style={{ width: 80, accentColor: '#06b6d4', cursor: 'pointer' }} />
+          <span className="mono" style={{ fontSize: 12, color: 'white', width: 16 }}>{threadCount}</span>
+        </div>
 
-              <h4 className="text-xl font-bold text-white leading-tight">
-                {selectedItem.title}
-              </h4>
-
-              <div className="text-xs text-cyan-300 bg-slate-900/60 p-3 rounded-lg border border-slate-800">
-                <strong className="text-slate-200">Category: </strong>{selectedItem.category}
-              </div>
-
-              <div>
-                <h5 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Section Overview</h5>
-                <p className="text-xs text-slate-300 leading-relaxed bg-slate-900/40 p-3 rounded-lg">
-                  {selectedItem.description}
-                </p>
-              </div>
-
-              <div>
-                <h5 className="text-xs font-semibold text-cyan-400 uppercase tracking-wider mb-2 flex items-center gap-1">
-                  <FileText className="w-3.5 h-3.5" /> Sample Publications Including Sub-Heading
-                </h5>
-                <ul className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
-                  {selectedItem.samplePaperTitles.map((paper, idx) => (
-                    <li key={idx} className="text-xs text-slate-300 bg-slate-900 p-2 rounded border border-slate-800 flex items-start gap-2">
-                      <Layout className="w-3.5 h-3.5 text-indigo-400 shrink-0 mt-0.5" />
-                      <span>{paper}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
+        <button className="btn btn-primary" style={{ flexShrink: 0, background: '#0e7490' }} onClick={() => load(threadCount)} disabled={loading}>
+          {loading ? (
+            <svg className="spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
           ) : (
-            <div className="text-center py-12 text-slate-500">
-              Select a sub-heading to inspect publication breakdown.
-            </div>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/></svg>
           )}
+          Run
+        </button>
+
+        <div style={{ display: 'flex', gap: 4, background: 'var(--surface-2)', borderRadius: 8, padding: 3, border: '1px solid var(--border-subtle)' }}>
+          {(['table', 'chart'] as const).map(v => (
+            <button key={v} onClick={() => setView(v)} style={{
+              padding: '4px 10px', fontSize: 12, fontWeight: 500, borderRadius: 6, border: 'none',
+              background: view === v ? 'var(--surface)' : 'transparent',
+              color: view === v ? 'white' : 'var(--text-muted)', cursor: 'pointer', transition: 'all 0.15s',
+            }}>{v === 'table' ? 'Table' : 'Chart'}</button>
+          ))}
         </div>
       </div>
+
+      {/* Stats */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
+        {[
+          { label: 'Sub-headings Found', value: filtered.length, sub: `of ${items.length} distinct sections` },
+          { label: 'Papers Analyzed', value: 8, sub: 'Deep learning publications' },
+          { label: 'Thread Workers', value: threadCount, sub: loading ? 'Running…' : 'Completed' },
+        ].map(s => (
+          <div key={s.label} className="stat-card">
+            <p style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>{s.label}</p>
+            <p style={{ fontSize: 22, fontWeight: 700, color: 'white', lineHeight: 1 }}>{s.value}</p>
+            <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 3 }}>{s.sub}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Content */}
+      {view === 'table' ? (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 16 }}>
+          <div className="surface" style={{ overflow: 'hidden' }}>
+            {filtered.length === 0 ? (
+              <div style={{ padding: 48, textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>
+                No sub-headings match <em>"{search}"</em>
+              </div>
+            ) : (
+              <div style={{ overflowX: 'auto' }}>
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>Sub-Heading Title</th>
+                      <th>Category</th>
+                      <th>Section</th>
+                      <th style={{ textAlign: 'right' }}>Papers</th>
+                      <th style={{ textAlign: 'right' }}>Freq.</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filtered.map(sh => (
+                      <tr key={sh.rank} className={selected?.rank === sh.rank ? 'active' : ''} style={{ cursor: 'pointer' }} onClick={() => setSelected(sh)}>
+                        <td><span className="rank-badge">{sh.rank}</span></td>
+                        <td style={{ fontWeight: 500, color: 'white' }}>{sh.title}</td>
+                        <td><span style={{ fontSize: 11, color: 'var(--text-muted)', background: 'var(--surface-2)', padding: '2px 7px', borderRadius: 4, border: '1px solid var(--border-subtle)', whiteSpace: 'nowrap' }}>{sh.category}</span></td>
+                        <td style={{ fontSize: 11, color: '#67e8f9', fontFamily: 'JetBrains Mono, monospace' }}>{sh.standardSectionHeader}</td>
+                        <td style={{ textAlign: 'right', fontWeight: 600, color: 'white', fontFamily: 'JetBrains Mono, monospace' }}>{sh.paperCount}</td>
+                        <td style={{ textAlign: 'right', color: 'var(--text-muted)', fontFamily: 'JetBrains Mono, monospace', fontSize: 12 }}>{sh.occurrencePercentage}%</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+
+          {/* Detail */}
+          <div className="surface" style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
+            {selected ? (
+              <>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <span className="rank-badge">#{selected.rank}</span>
+                  <span className="tag tag-cyan">{selected.occurrencePercentage}% of papers</span>
+                </div>
+                <div>
+                  <p style={{ fontSize: 15, fontWeight: 600, color: 'white', lineHeight: 1.4 }}>{selected.title}</p>
+                  <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>{selected.category}</p>
+                </div>
+                <div className="divider" />
+                <div>
+                  <p style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>Standard Header</p>
+                  <p style={{ fontSize: 12, color: '#67e8f9', fontFamily: 'JetBrains Mono, monospace', padding: '6px 10px', background: 'var(--surface-2)', borderRadius: 5 }}>{selected.standardSectionHeader}</p>
+                </div>
+                <div>
+                  <p style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>Description</p>
+                  <p style={{ fontSize: 12, color: 'var(--text)', lineHeight: 1.6 }}>{selected.description}</p>
+                </div>
+                <div>
+                  <p style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>Papers Using This Section</p>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4, maxHeight: 160, overflowY: 'auto' }}>
+                    {selected.samplePaperTitles.map((p, i) => (
+                      <div key={i} style={{ fontSize: 12, color: 'var(--text)', padding: '5px 8px', background: 'var(--surface-2)', borderRadius: 5, border: '1px solid var(--border-subtle)' }}>{p}</div>
+                    ))}
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: 13, padding: 32 }}>Select a sub-heading to inspect</div>
+            )}
+          </div>
+        </div>
+      ) : (
+        <div className="surface" style={{ padding: 24 }}>
+          <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 16 }}>Sub-heading frequency across deep learning journal papers</p>
+          <div style={{ height: 360 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={chartData} margin={{ top: 0, right: 16, left: 8, bottom: 32 }}>
+                <XAxis dataKey="name" stroke="var(--border)" tick={{ fontSize: 10, fill: 'var(--text-muted)' }} angle={-30} textAnchor="end" interval={0} />
+                <YAxis stroke="var(--border)" tick={{ fontSize: 11, fill: 'var(--text-muted)' }} />
+                <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255,255,255,0.03)' }} />
+                <Bar dataKey="papers" radius={[4, 4, 0, 0]}>
+                  {chartData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
