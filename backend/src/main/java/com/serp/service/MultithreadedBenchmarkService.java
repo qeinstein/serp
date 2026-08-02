@@ -127,7 +127,7 @@ public class MultithreadedBenchmarkService {
     // ────────────────────────────────────────────────────────────────────────
     private String buildSemanticSummary(String query, List<String> tokens, List<SearchResult> ranked) {
         if (ranked.isEmpty()) {
-            return "No papers matched the query "" + query + "". Try broader terms such as "spatial", "GIS", "transformer", or "deep learning".";
+            return "No papers matched the query '" + query + "'. Try broader terms such as 'spatial', 'GIS', 'transformer', or 'deep learning'.";
         }
 
         // Collect dominant features/subheadings across top results
@@ -153,7 +153,7 @@ public class MultithreadedBenchmarkService {
         long dlCount    = ranked.stream().filter(r -> "DEEP_LEARNING".equals(r.getPaper().getDomain())).count();
 
         StringBuilder sb = new StringBuilder();
-        sb.append("Search Engine Results for "").append(query).append("" — ");
+        sb.append("Search Engine Results for '").append(query).append("' -- ");
         sb.append(ranked.size()).append(" paper").append(ranked.size() != 1 ? "s" : "").append(" found");
 
         if (crimeCount > 0 && dlCount > 0) {
@@ -169,9 +169,9 @@ public class MultithreadedBenchmarkService {
             sb.append("Key themes identified: ").append(String.join("; ", topHighlights)).append(". ");
         }
 
-        sb.append("The highest-ranked result is "")
+        sb.append("The highest-ranked result is '")
           .append(ranked.get(0).getPaper().getTitle())
-          .append("" (").append(ranked.get(0).getPaper().getYear()).append(").");
+          .append("' (").append(ranked.get(0).getPaper().getYear()).append(").");
 
         return sb.toString();
     }

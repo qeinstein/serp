@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { BenchmarkResult, SummarizeResponse } from '../lib/types';
-import { fetchBenchmarkResults, fetchSerpSummary } from '../lib/api';
+import { BenchmarkResult, SerpSearchResponse } from '../lib/types';
+import { fetchBenchmarkResults, serpSearch } from '../lib/api';
+
 import {
   LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
 } from 'recharts';
@@ -24,7 +25,7 @@ export const MultithreadBenchmarkTab: React.FC = () => {
   const [loadingBench, setLoadingBench] = useState(false);
   const [query, setQuery] = useState('');
   const [domain, setDomain] = useState('ALL');
-  const [summary, setSummary] = useState<SummarizeResponse | null>(null);
+  const [summary, setSummary] = useState<SerpSearchResponse | null>(null);
   const [loadingSummary, setLoadingSummary] = useState(false);
   const [activeMetric, setActiveMetric] = useState<'speedup' | 'throughput' | 'time'>('speedup');
 
@@ -39,8 +40,8 @@ export const MultithreadBenchmarkTab: React.FC = () => {
     e?.preventDefault();
     if (!query.trim()) return;
     setLoadingSummary(true);
-    const r = await fetchSerpSummary(query, domain);
-    setSummary(r);
+    const r = await serpSearch(query, domain);
+    setSummary(r as any);
     setLoadingSummary(false);
   };
 
@@ -172,10 +173,10 @@ export const MultithreadBenchmarkTab: React.FC = () => {
           <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <div className="divider" />
 
-            {/* Query + timing */}
+            {/* Query tokens + timing */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                {summary.extractedKeywords.map((kw, i) => (
+                {summary.tokens.map((kw, i) => (
                   <span key={i} className="tag tag-accent">{kw}</span>
                 ))}
               </div>
@@ -184,16 +185,16 @@ export const MultithreadBenchmarkTab: React.FC = () => {
 
             {/* Summary text */}
             <div style={{ padding: '14px 16px', background: 'var(--surface-2)', borderRadius: 8, borderLeft: '2px solid #6366f1' }}>
-              <p style={{ fontSize: 13, color: 'var(--text)', lineHeight: 1.7, margin: 0 }}>{summary.summaryText}</p>
+              <p style={{ fontSize: 13, color: 'var(--text)', lineHeight: 1.7, margin: 0 }}>{summary.semanticSummary}</p>
             </div>
 
             {/* Matched papers */}
             <div>
               <p style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>
-                {summary.matchedPapersCount} Matched Papers
+                {summary.totalResults} Matched Papers
               </p>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 10 }}>
-                {summary.topRelevantPapers.map(paper => (
+                {summary.results.map(r => { const paper = r.paper; return (
                   <div key={paper.id} style={{ background: 'var(--surface-2)', border: '1px solid var(--border-subtle)', borderRadius: 8, padding: 14 }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
                       <span className={paper.domain === 'CRIME_REPORTING' ? 'tag tag-green' : 'tag tag-cyan'} style={{ fontSize: 10 }}>
@@ -215,7 +216,8 @@ export const MultithreadBenchmarkTab: React.FC = () => {
                       </a>
                     </div>
                   </div>
-                ))}
+                ); })}
+
               </div>
             </div>
           </div>
